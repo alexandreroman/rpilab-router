@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: rpilab-router
+
+app:
+  routes:
+  - host: "hello.127.0.0.1.nip.io:9000"
+    uri: "http://localhost:8080"
+    secured: true
+  credentials:
+    realm: rpilab
+    username: admin
+    password: changeme
+
+server:
+  port: ${PORT:9000}
+
+management:
+  server:
+    port: 9001
+  endpoint:
+    health:
+      probes:
+        add-additional-paths: true
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health

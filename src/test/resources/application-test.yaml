@@ -1,0 +1,11 @@
+app:
+  routes:
+  - host: "hello.corp.com"
+    uri: "http://localhost:${wiremock.server.port}"
+    secured: false
+  - host: "hola.corp.com"
+    uri: "http://localhost:${wiremock.server.port}"
+    secured: false
+  - host: "secure.corp.com"
+    uri: "http://localhost:${wiremock.server.port}"
+    secured: true
