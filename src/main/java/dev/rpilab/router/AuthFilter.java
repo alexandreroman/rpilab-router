@@ -20,20 +20,18 @@ import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.util.Base64;
 
+@Component
 class AuthFilter implements GatewayFilter {
-    private final String username;
-    private final String password;
-    private final String realm;
+    private final AppProps props;
 
-    AuthFilter(String username, String password, String realm) {
-        this.username = username;
-        this.password = password;
-        this.realm = realm;
+    AuthFilter(AppProps props) {
+        this.props = props;
     }
 
     @Override
@@ -44,13 +42,22 @@ class AuthFilter implements GatewayFilter {
             final var token = authHeader.substring("Basic ".length());
             final var credentials = new String(Base64.getDecoder().decode(token));
             final var parts = credentials.split(":");
-            if (parts.length == 2 && parts[0].equals(username) && parts[1].equals(password)) {
+            if (parts.length == 2 && isUserValid(parts[0], parts[1])) {
                 return chain.filter(exchange);
             }
         }
         final var resp = exchange.getResponse();
         resp.setStatusCode(HttpStatus.UNAUTHORIZED);
-        resp.getHeaders().add(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
+        resp.getHeaders().add(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"rpilab\"");
         return resp.setComplete();
+    }
+
+    private boolean isUserValid(String username, String password) {
+        for (final Credentials creds : props.credentials()) {
+            if (username.equals(creds.username()) && password.equals(creds.password())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

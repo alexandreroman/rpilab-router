@@ -9,3 +9,6 @@ app:
   - host: "secure.corp.com"
     uri: "http://localhost:${wiremock.server.port}"
     secured: true
+  credentials:
+  - username: foo
+    password: bar

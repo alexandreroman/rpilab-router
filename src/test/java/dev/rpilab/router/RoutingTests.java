@@ -24,6 +24,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+import java.util.Base64;
+
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -57,6 +59,23 @@ class RoutingTests {
     void testUnknownRoute() {
         client.get().uri("/notfound").header(HttpHeaders.HOST, "foo.corp.com").exchange()
                 .expectStatus().isNotFound();
+    }
+
+    @Test
+    void testAuth() {
+        stubFor(get("/").willReturn(ok("Authenticated")));
+        client.get().uri("/").header(HttpHeaders.HOST, "secure.corp.com").exchange()
+                .expectStatus().isUnauthorized();
+        client.get().uri("/")
+                .header(HttpHeaders.HOST, "secure.corp.com")
+                .header(HttpHeaders.AUTHORIZATION, "Basic " + Base64.getEncoder().encodeToString("bad:credentials".getBytes()))
+                .exchange()
+                .expectStatus().isUnauthorized();
+        client.get().uri("/")
+                .header(HttpHeaders.HOST, "secure.corp.com")
+                .header(HttpHeaders.AUTHORIZATION, "Basic " + Base64.getEncoder().encodeToString("foo:bar".getBytes()))
+                .exchange()
+                .expectStatus().isOk();
     }
 
     @Test

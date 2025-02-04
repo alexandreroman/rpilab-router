@@ -24,8 +24,7 @@ import java.util.List;
 @ConfigurationProperties(prefix = "app")
 record AppProps(
         List<RouteDefinition> routes,
-        @NestedConfigurationProperty
-        Credentials credentials
+        List<Credentials> credentials
 ) {
 }
 
@@ -37,7 +36,6 @@ record RouteDefinition(
 }
 
 record Credentials(
-        String realm,
         String username,
         String password
 ) {

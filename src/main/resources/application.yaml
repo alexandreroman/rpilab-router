@@ -8,8 +8,7 @@ app:
     uri: "http://localhost:8080"
     secured: true
   credentials:
-    realm: rpilab
-    username: admin
+  - username: admin
     password: changeme
 
 server:
