@@ -27,11 +27,12 @@ class GatewayConfig {
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder, AuthFilter authFilter, AppProps props) {
         final var routes = builder.routes();
         for (final RouteDefinition rd : props.routes()) {
-            if (rd.secured()) {
-                routes.route(r -> r.host(rd.host()).filters(f -> f.filter(authFilter)).uri(rd.uri()));
-            } else {
-                routes.route(r -> r.host(rd.host()).uri(rd.uri()));
-            }
+            routes.route(r -> r.host(rd.host()).filters(f -> {
+                if (rd.secured()) {
+                    f.filter(authFilter);
+                }
+                return f;
+            }).uri(rd.uri()));
         }
         return routes.build();
     }
