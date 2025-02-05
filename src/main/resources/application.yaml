@@ -6,6 +6,7 @@ spring:
       enabled: false
   http:
     client:
+      connect-timeout: 30s
       read-timeout: 60s
   threads:
     virtual:
