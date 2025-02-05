@@ -20,7 +20,7 @@ server:
 
 management:
   server:
-    port: 9001
+    port: ${MANAGEMENT_PORT:9001}
   endpoint:
     health:
       probes:
