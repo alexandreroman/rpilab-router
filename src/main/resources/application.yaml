@@ -1,6 +1,10 @@
 spring:
   application:
     name: rpilab-router
+  cloud:
+    gateway:
+      httpclient:
+        response-timeout: 60s
 
 app:
   routes:
