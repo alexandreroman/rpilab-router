@@ -17,6 +17,7 @@
 package dev.rpilab.router;
 
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.servlet.function.HandlerFilterFunction;
@@ -25,18 +26,20 @@ import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 
-class NotFoundFilter implements HandlerFilterFunction<ServerResponse, ServerResponse> {
+class RobotsTxtFilter implements HandlerFilterFunction<ServerResponse, ServerResponse> {
     @Override
     public ServerResponse filter(ServerRequest req, HandlerFunction<ServerResponse> next) throws Exception {
-        final var response = next.handle(req);
-        if (HttpStatus.NOT_FOUND.equals(response.statusCode())) {
-            final var res = new ClassPathResource("/static/error/404.html");
+        if (req.path().equals("/robots.txt")) {
+            final var res = new ClassPathResource("/static/robots.txt");
             return ServerResponse
-                    .status(HttpStatus.NOT_FOUND)
-                    .contentType(MediaType.TEXT_HTML)
+                    .status(HttpStatus.OK)
+                    .contentType(MediaType.TEXT_PLAIN)
+                    .cacheControl(CacheControl.noStore())
+                    .lastModified(Instant.now())
                     .body(res.getContentAsString(StandardCharsets.UTF_8));
         }
-        return response;
+        return next.handle(req);
     }
 }

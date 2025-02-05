@@ -2,9 +2,14 @@ spring:
   application:
     name: rpilab-router
   cloud:
-    gateway:
-      httpclient:
-        response-timeout: 60s
+    refresh:
+      enabled: false
+  http:
+    client:
+      read-timeout: 60s
+  threads:
+    virtual:
+      enabled: true
 
 app:
   routes:

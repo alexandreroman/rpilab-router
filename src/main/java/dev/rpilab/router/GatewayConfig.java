@@ -16,33 +16,58 @@
 
 package dev.rpilab.router;
 
-import org.springframework.cloud.gateway.route.RouteLocator;
-import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
+import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import static org.springframework.cloud.gateway.server.mvc.handler.GatewayRouterFunctions.route;
+import static org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions.http;
+import static org.springframework.cloud.gateway.server.mvc.predicate.GatewayRequestPredicates.host;
 
 @Configuration(proxyBeanMethods = false)
 class GatewayConfig {
     @Bean
-    public RouteLocator customRouteLocator(RouteLocatorBuilder builder,
-                                           AuthFilter authFilter,
-                                           NotFoundFilter notFoundFilter,
-                                           AppProps props) {
-        final var routes = builder.routes();
+    AuthFilter authFilter(AppProps props) {
+        return new AuthFilter(props);
+    }
 
-        // Setup robots.txt for any downstream services.
-        routes.route(r -> r.path("/robots.txt").uri("classpath:/static/robots.txt"));
+    @Bean
+    NotFoundFilter notFoundFilter() {
+        return new NotFoundFilter();
+    }
 
-        // Setup downstream routes.
-        for (final var rd : props.routes()) {
-            routes.route(r -> r.host(rd.host()).filters(f -> {
-                f.filter(notFoundFilter);
+    @Bean
+    RobotsTxtFilter robotsTxtFilter() {
+        return new RobotsTxtFilter();
+    }
+
+    @Bean
+    TimeoutFilter timeoutFilter() {
+        return new TimeoutFilter();
+    }
+
+    @Bean
+    BeanFactoryPostProcessor routes(
+            AuthFilter authFilter,
+            NotFoundFilter notFoundFilter,
+            RobotsTxtFilter robotsTxtFilter,
+            TimeoutFilter timeoutFilter,
+            AppProps props) {
+        return beanFactory -> {
+            // Setup downstream routes
+            int i = 0;
+            for (final var rd : props.routes()) {
+                final var routeId = "route-" + (i++);
+                final var r = route(routeId)
+                        .route(host(rd.host()), http(rd.uri()))
+                        .filter(robotsTxtFilter)
+                        .filter(notFoundFilter)
+                        .filter(timeoutFilter);
                 if (rd.secured()) {
-                    f.filter(authFilter);
+                    r.filter(authFilter);
                 }
-                return f;
-            }).uri(rd.uri()));
-        }
-        return routes.build();
+                beanFactory.registerSingleton(routeId, r.build());
+            }
+        };
     }
 }

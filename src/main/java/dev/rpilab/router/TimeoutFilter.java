@@ -16,27 +16,30 @@
 
 package dev.rpilab.router;
 
-import org.springframework.core.io.ClassPathResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.servlet.function.HandlerFilterFunction;
 import org.springframework.web.servlet.function.HandlerFunction;
 import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
 
-import java.nio.charset.StandardCharsets;
+import java.net.SocketTimeoutException;
 
-class NotFoundFilter implements HandlerFilterFunction<ServerResponse, ServerResponse> {
+class TimeoutFilter implements HandlerFilterFunction<ServerResponse, ServerResponse> {
+    private final Logger logger = LoggerFactory.getLogger(TimeoutFilter.class);
+
     @Override
     public ServerResponse filter(ServerRequest req, HandlerFunction<ServerResponse> next) throws Exception {
-        final var response = next.handle(req);
-        if (HttpStatus.NOT_FOUND.equals(response.statusCode())) {
-            final var res = new ClassPathResource("/static/error/404.html");
-            return ServerResponse
-                    .status(HttpStatus.NOT_FOUND)
-                    .contentType(MediaType.TEXT_HTML)
-                    .body(res.getContentAsString(StandardCharsets.UTF_8));
+        try {
+            return next.handle(req);
+        } catch (ResourceAccessException e) {
+            if (e.getMostSpecificCause() instanceof SocketTimeoutException) {
+                logger.warn("Socket timed out", e);
+                return ServerResponse.status(HttpStatus.GATEWAY_TIMEOUT).body("Connection timed out");
+            }
+            throw e;
         }
-        return response;
     }
 }

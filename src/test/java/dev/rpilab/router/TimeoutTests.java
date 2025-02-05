@@ -18,6 +18,7 @@ package dev.rpilab.router;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.http.HttpHeaders;
@@ -28,9 +29,10 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {"spring.cloud.gateway.httpclient.connect-timeout=1000",
-                "spring.cloud.gateway.httpclient.response-timeout=1000"})
+        properties = {"spring.http.client.connect-timeout=1s",
+                "spring.http.client.read-timeout=1s"})
 @AutoConfigureWireMock(port = 0)
+@AutoConfigureWebTestClient
 @ActiveProfiles("test")
 class TimeoutTests {
     @Autowired
@@ -38,8 +40,8 @@ class TimeoutTests {
 
     @Test
     void testTimeout() {
-        stubFor(get("/").willReturn(aResponse().withFixedDelay(10 * 1000).withStatus(200).withBody("Timeout")));
-        client.get().uri("/").header(HttpHeaders.HOST, "hello.corp.com").exchange()
+        stubFor(get("/hello").willReturn(aResponse().withFixedDelay(10 * 1000).withStatus(200).withBody("Timeout")));
+        client.get().uri("/hello").header(HttpHeaders.HOST, "hello.corp.com").exchange()
                 .expectStatus().isEqualTo(HttpStatus.GATEWAY_TIMEOUT);
     }
 }

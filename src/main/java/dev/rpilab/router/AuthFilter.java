@@ -16,40 +16,20 @@
 
 package dev.rpilab.router;
 
-import org.springframework.cloud.gateway.filter.GatewayFilter;
-import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
-import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Mono;
+import org.springframework.web.servlet.function.HandlerFilterFunction;
+import org.springframework.web.servlet.function.HandlerFunction;
+import org.springframework.web.servlet.function.ServerRequest;
+import org.springframework.web.servlet.function.ServerResponse;
 
 import java.util.Base64;
 
-@Component
-class AuthFilter implements GatewayFilter {
+class AuthFilter implements HandlerFilterFunction<ServerResponse, ServerResponse> {
     private final AppProps props;
 
     AuthFilter(AppProps props) {
         this.props = props;
-    }
-
-    @Override
-    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        final var req = exchange.getRequest();
-        final var authHeader = req.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-        if (authHeader != null && authHeader.startsWith("Basic ")) {
-            final var token = authHeader.substring("Basic ".length());
-            final var credentials = new String(Base64.getDecoder().decode(token));
-            final var parts = credentials.split(":");
-            if (parts.length == 2 && isUserValid(parts[0], parts[1])) {
-                return chain.filter(exchange);
-            }
-        }
-        final var resp = exchange.getResponse();
-        resp.setStatusCode(HttpStatus.UNAUTHORIZED);
-        resp.getHeaders().add(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"rpilab\"");
-        return resp.setComplete();
     }
 
     private boolean isUserValid(String username, String password) {
@@ -59,5 +39,21 @@ class AuthFilter implements GatewayFilter {
             }
         }
         return false;
+    }
+
+    @Override
+    public ServerResponse filter(ServerRequest req, HandlerFunction<ServerResponse> next) throws Exception {
+        final var authHeader = req.headers().firstHeader(HttpHeaders.AUTHORIZATION);
+        if (authHeader != null && authHeader.startsWith("Basic ")) {
+            final var token = authHeader.substring("Basic ".length());
+            final var credentials = new String(Base64.getDecoder().decode(token));
+            final var parts = credentials.split(":");
+            if (parts.length == 2 && isUserValid(parts[0], parts[1])) {
+                return next.handle(req);
+            }
+        }
+        return ServerResponse.status(HttpStatus.UNAUTHORIZED)
+                .header(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"rpilab\"")
+                .body("Unauthorized");
     }
 }

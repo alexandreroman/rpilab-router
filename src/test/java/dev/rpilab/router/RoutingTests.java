@@ -18,6 +18,7 @@ package dev.rpilab.router;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.http.HttpHeaders;
@@ -32,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWireMock(port = 0)
+@AutoConfigureWebTestClient
 @ActiveProfiles("test")
 class RoutingTests {
     @Autowired
@@ -103,7 +105,10 @@ class RoutingTests {
 
     @Test
     void testRobotsTxt() {
-        client.get().uri("/robots.txt").exchange().expectStatus().isOk();
+        assertThat(client.get()
+                .uri("/robots.txt").exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).returnResult().getResponseBody()).contains("User-agent: *");
 
         stubFor(get("/robots.txt").willReturn(notFound().withBody("No robots.txt in downstream service")));
         client.get().uri("/robots.txt")
