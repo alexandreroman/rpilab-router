@@ -24,10 +24,14 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 class GatewayConfig {
     @Bean
-    public RouteLocator customRouteLocator(RouteLocatorBuilder builder, AuthFilter authFilter, AppProps props) {
+    public RouteLocator customRouteLocator(RouteLocatorBuilder builder,
+                                           AuthFilter authFilter,
+                                           NotFoundFilter notFoundFilter,
+                                           AppProps props) {
         final var routes = builder.routes();
         for (final RouteDefinition rd : props.routes()) {
             routes.route(r -> r.host(rd.host()).filters(f -> {
+                f.filter(notFoundFilter);
                 if (rd.secured()) {
                     f.filter(authFilter);
                 }

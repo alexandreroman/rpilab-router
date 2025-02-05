@@ -21,12 +21,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import java.util.Base64;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWireMock(port = 0)
@@ -57,8 +59,23 @@ class RoutingTests {
 
     @Test
     void testUnknownRoute() {
-        client.get().uri("/notfound").header(HttpHeaders.HOST, "foo.corp.com").exchange()
-                .expectStatus().isNotFound();
+        assertThat(client.get()
+                .uri("/notfound-in-gateway")
+                .accept(MediaType.TEXT_HTML)
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectBody(String.class).returnResult().getResponseBody()).contains("Droid Not Found");
+
+        stubFor(get("/notfound").willReturn(notFound().withBody("Downstream error: not found")));
+        assertThat(client.get()
+                .uri("/notfound")
+                .header(HttpHeaders.HOST, "hello.corp.com")
+                .accept(MediaType.TEXT_HTML)
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectBody(String.class).returnResult().getResponseBody()).contains("Droid Not Found");
     }
 
     @Test
