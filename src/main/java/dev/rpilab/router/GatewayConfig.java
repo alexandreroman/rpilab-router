@@ -29,7 +29,12 @@ class GatewayConfig {
                                            NotFoundFilter notFoundFilter,
                                            AppProps props) {
         final var routes = builder.routes();
-        for (final RouteDefinition rd : props.routes()) {
+
+        // Setup robots.txt for any downstream services.
+        routes.route(r -> r.path("/robots.txt").uri("classpath:/static/robots.txt"));
+
+        // Setup downstream routes.
+        for (final var rd : props.routes()) {
             routes.route(r -> r.host(rd.host()).filters(f -> {
                 f.filter(notFoundFilter);
                 if (rd.secured()) {

@@ -100,4 +100,15 @@ class RoutingTests {
         client.get().uri("/livez").exchange().expectStatus().isOk();
         client.get().uri("/readyz").exchange().expectStatus().isOk();
     }
+
+    @Test
+    void testRobotsTxt() {
+        client.get().uri("/robots.txt").exchange().expectStatus().isOk();
+
+        stubFor(get("/robots.txt").willReturn(notFound().withBody("No robots.txt in downstream service")));
+        client.get().uri("/robots.txt")
+                .header(HttpHeaders.HOST, "hello.corp.com")
+                .exchange()
+                .expectStatus().isOk();
+    }
 }
