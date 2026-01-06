@@ -23,19 +23,17 @@ import java.util.List;
 @ConfigurationProperties(prefix = "app")
 record AppProps(
         List<RouteDefinition> routes,
-        List<Credentials> credentials
-) {
+        List<Credentials> credentials) {
 }
 
 record RouteDefinition(
         String host,
         String uri,
-        boolean secured
-) {
+        boolean secured,
+        org.springframework.web.cors.CorsConfiguration cors) {
 }
 
 record Credentials(
         String username,
-        String password
-) {
+        String password) {
 }

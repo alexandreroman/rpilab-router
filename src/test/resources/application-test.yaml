@@ -9,6 +9,19 @@ app:
   - host: "secure.corp.com"
     uri: "http://localhost:${wiremock.server.port}"
     secured: true
+  - host: "svc.corp.com"
+    uri: "http://localhost:${wiremock.server.port}"
+    cors:
+      allowedOrigins:
+        - "https://origin.corp.com"
+      allowedMethods:
+        - "GET"
+        - "POST"
+        - "PUT"
+        - "DELETE"
+        - "OPTIONS"
+      allowedHeaders:
+        - "*"
   credentials:
   - username: foo
     password: bar

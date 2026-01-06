@@ -87,12 +87,15 @@ class RoutingTests {
                 .expectStatus().isUnauthorized();
         client.get().uri("/")
                 .header(HttpHeaders.HOST, "secure.corp.com")
-                .header(HttpHeaders.AUTHORIZATION, "Basic " + Base64.getEncoder().encodeToString("bad:credentials".getBytes()))
+                .header(HttpHeaders.AUTHORIZATION,
+                        "Basic " + Base64.getEncoder()
+                                .encodeToString("bad:credentials".getBytes()))
                 .exchange()
                 .expectStatus().isUnauthorized();
         client.get().uri("/")
                 .header(HttpHeaders.HOST, "secure.corp.com")
-                .header(HttpHeaders.AUTHORIZATION, "Basic " + Base64.getEncoder().encodeToString("foo:bar".getBytes()))
+                .header(HttpHeaders.AUTHORIZATION,
+                        "Basic " + Base64.getEncoder().encodeToString("foo:bar".getBytes()))
                 .exchange()
                 .expectStatus().isOk();
     }
@@ -115,5 +118,44 @@ class RoutingTests {
                 .header(HttpHeaders.HOST, "hello.corp.com")
                 .exchange()
                 .expectStatus().isOk();
+    }
+
+    @Test
+    void testCors() {
+        // Route with CORS configuration
+        stubFor(get("/cors").willReturn(ok("CORS")));
+        client.get().uri("/cors")
+                .header(HttpHeaders.HOST, "svc.corp.com")
+                .header(HttpHeaders.ORIGIN, "https://origin.corp.com")
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader()
+                .valueEquals(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "https://origin.corp.com");
+
+        client.options().uri("/cors")
+                .header(HttpHeaders.HOST, "svc.corp.com")
+                .header(HttpHeaders.ORIGIN, "https://origin.corp.com")
+                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET")
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader()
+                .valueEquals(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "https://origin.corp.com")
+                .expectHeader()
+                .valueEquals(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "GET,POST,PUT,DELETE,OPTIONS");
+
+        client.get().uri("/cors")
+                .header(HttpHeaders.HOST, "svc.corp.com")
+                .header(HttpHeaders.ORIGIN, "https://evil.com")
+                .exchange()
+                .expectStatus().isForbidden();
+
+        // Route without CORS configuration
+        stubFor(get("/hello").willReturn(ok("Hello")));
+        client.get().uri("/hello")
+                .header(HttpHeaders.HOST, "hello.corp.com")
+                .header(HttpHeaders.ORIGIN, "https://origin.corp.com")
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN);
     }
 }
