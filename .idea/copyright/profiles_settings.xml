@@ -1,3 +1,7 @@
 <component name="CopyrightManager">
-  <settings default="broadcom" />
+  <settings default="rpilab">
+    <module2copyright>
+      <element module="Project Files" copyright="rpilab" />
+    </module2copyright>
+  </settings>
 </component>
