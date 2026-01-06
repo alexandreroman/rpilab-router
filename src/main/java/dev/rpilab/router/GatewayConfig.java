@@ -17,10 +17,11 @@
 package dev.rpilab.router;
 
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
+import org.springframework.cloud.gateway.server.mvc.filter.BeforeFilterFunctions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.function.RouterFunctions;
 
-import static org.springframework.cloud.gateway.server.mvc.handler.GatewayRouterFunctions.route;
 import static org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions.http;
 import static org.springframework.cloud.gateway.server.mvc.predicate.GatewayRequestPredicates.host;
 
@@ -58,9 +59,12 @@ class GatewayConfig {
             int i = 0;
             for (final var rd : props.routes()) {
                 final var routeId = "route-" + (i++);
-                final var r = route(routeId)
-                        .route(host(rd.host()), http(rd.uri()))
-                        .filter(robotsTxtFilter)
+                // Use standard RouterFunctions.route()
+                final var r = RouterFunctions.route()
+                        .route(host(rd.host()), http())
+                        .before(BeforeFilterFunctions.uri(rd.uri()));
+
+                r.filter(robotsTxtFilter)
                         .filter(notFoundFilter)
                         .filter(timeoutFilter);
                 if (rd.secured()) {
