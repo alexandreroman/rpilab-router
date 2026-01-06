@@ -36,126 +36,135 @@ import static org.assertj.core.api.Assertions.assertThat;
 @AutoConfigureWebTestClient
 @ActiveProfiles("test")
 class RoutingTests {
-    @Autowired
-    private WebTestClient client;
+        @Autowired
+        private WebTestClient client;
 
-    @Test
-    void testRoutes() {
-        stubFor(get("/hello").willReturn(ok("Hello")));
-        client.get().uri("/hello").header(HttpHeaders.HOST, "hello.corp.com").exchange()
-                .expectStatus().isOk();
+        @Test
+        void testRoutes() {
+                stubFor(get("/hello").willReturn(ok("Hello")));
+                client.get().uri("/hello").header(HttpHeaders.HOST, "hello.corp.com").exchange()
+                                .expectStatus().isOk();
 
-        stubFor(get("/hola").willReturn(ok("Hola")));
-        client.get().uri("/hola").header(HttpHeaders.HOST, "hola.corp.com").exchange()
-                .expectStatus().isOk();
-    }
+                stubFor(get("/hola").willReturn(ok("Hola")));
+                client.get().uri("/hola").header(HttpHeaders.HOST, "hola.corp.com").exchange()
+                                .expectStatus().isOk();
+        }
 
-    @Test
-    void testSecuredRoutes() {
-        stubFor(get("/secure").willReturn(ok("Secure")));
-        client.get().uri("/secure").header(HttpHeaders.HOST, "secure.corp.com").exchange()
-                .expectStatus().isUnauthorized();
-        client.get().uri("/notfound").header(HttpHeaders.HOST, "secure.corp.com").exchange()
-                .expectStatus().isUnauthorized();
-    }
+        @Test
+        void testSecuredRoutes() {
+                stubFor(get("/secure").willReturn(ok("Secure")));
+                client.get().uri("/secure").header(HttpHeaders.HOST, "secure.corp.com").exchange()
+                                .expectStatus().isUnauthorized();
+                client.get().uri("/notfound").header(HttpHeaders.HOST, "secure.corp.com").exchange()
+                                .expectStatus().isUnauthorized();
+        }
 
-    @Test
-    void testUnknownRoute() {
-        assertThat(client.get()
-                .uri("/notfound-in-gateway")
-                .accept(MediaType.TEXT_HTML)
-                .exchange()
-                .expectStatus()
-                .isNotFound()
-                .expectBody(String.class).returnResult().getResponseBody()).contains("Droid Not Found");
+        @Test
+        void testUnknownRoute() {
+                assertThat(client.get()
+                                .uri("/notfound-in-gateway")
+                                .accept(MediaType.TEXT_HTML)
+                                .exchange()
+                                .expectStatus()
+                                .isNotFound()
+                                .expectBody(String.class).returnResult().getResponseBody()).contains("Droid Not Found");
 
-        stubFor(get("/notfound").willReturn(notFound().withBody("Downstream error: not found")));
-        assertThat(client.get()
-                .uri("/notfound")
-                .header(HttpHeaders.HOST, "hello.corp.com")
-                .accept(MediaType.TEXT_HTML)
-                .exchange()
-                .expectStatus()
-                .isNotFound()
-                .expectBody(String.class).returnResult().getResponseBody()).contains("Droid Not Found");
-    }
+                stubFor(get("/notfound").willReturn(notFound().withBody("Downstream error: not found")));
+                assertThat(client.get()
+                                .uri("/notfound")
+                                .header(HttpHeaders.HOST, "hello.corp.com")
+                                .accept(MediaType.TEXT_HTML)
+                                .exchange()
+                                .expectStatus()
+                                .isNotFound()
+                                .expectBody(String.class).returnResult().getResponseBody()).contains("Droid Not Found");
+        }
 
-    @Test
-    void testAuth() {
-        stubFor(get("/").willReturn(ok("Authenticated")));
-        client.get().uri("/").header(HttpHeaders.HOST, "secure.corp.com").exchange()
-                .expectStatus().isUnauthorized();
-        client.get().uri("/")
-                .header(HttpHeaders.HOST, "secure.corp.com")
-                .header(HttpHeaders.AUTHORIZATION,
-                        "Basic " + Base64.getEncoder()
-                                .encodeToString("bad:credentials".getBytes()))
-                .exchange()
-                .expectStatus().isUnauthorized();
-        client.get().uri("/")
-                .header(HttpHeaders.HOST, "secure.corp.com")
-                .header(HttpHeaders.AUTHORIZATION,
-                        "Basic " + Base64.getEncoder().encodeToString("foo:bar".getBytes()))
-                .exchange()
-                .expectStatus().isOk();
-    }
+        @Test
+        void testAuth() {
+                stubFor(get("/").willReturn(ok("Authenticated")));
+                client.get().uri("/").header(HttpHeaders.HOST, "secure.corp.com").exchange()
+                                .expectStatus().isUnauthorized();
+                client.get().uri("/")
+                                .header(HttpHeaders.HOST, "secure.corp.com")
+                                .header(HttpHeaders.AUTHORIZATION,
+                                                "Basic " + Base64.getEncoder()
+                                                                .encodeToString("bad:credentials".getBytes()))
+                                .exchange()
+                                .expectStatus().isUnauthorized();
+                client.get().uri("/")
+                                .header(HttpHeaders.HOST, "secure.corp.com")
+                                .header(HttpHeaders.AUTHORIZATION,
+                                                "Basic " + Base64.getEncoder().encodeToString("foo:bar".getBytes()))
+                                .exchange()
+                                .expectStatus().isOk();
+        }
 
-    @Test
-    void testHealthProbes() {
-        client.get().uri("/livez").exchange().expectStatus().isOk();
-        client.get().uri("/readyz").exchange().expectStatus().isOk();
-    }
+        @Test
+        void testHealthProbes() {
+                client.get().uri("/livez").exchange().expectStatus().isOk();
+                client.get().uri("/readyz").exchange().expectStatus().isOk();
+        }
 
-    @Test
-    void testRobotsTxt() {
-        assertThat(client.get()
-                .uri("/robots.txt").exchange()
-                .expectStatus().isOk()
-                .expectBody(String.class).returnResult().getResponseBody()).contains("User-agent: *");
+        @Test
+        void testRobotsTxt() {
+                assertThat(client.get()
+                                .uri("/robots.txt").exchange()
+                                .expectStatus().isOk()
+                                .expectBody(String.class).returnResult().getResponseBody()).contains("User-agent: *");
 
-        stubFor(get("/robots.txt").willReturn(notFound().withBody("No robots.txt in downstream service")));
-        client.get().uri("/robots.txt")
-                .header(HttpHeaders.HOST, "hello.corp.com")
-                .exchange()
-                .expectStatus().isOk();
-    }
+                stubFor(get("/robots.txt").willReturn(notFound().withBody("No robots.txt in downstream service")));
+                client.get().uri("/robots.txt")
+                                .header(HttpHeaders.HOST, "hello.corp.com")
+                                .exchange()
+                                .expectStatus().isOk();
+        }
 
-    @Test
-    void testCors() {
-        // Route with CORS configuration
-        stubFor(get("/cors").willReturn(ok("CORS")));
-        client.get().uri("/cors")
-                .header(HttpHeaders.HOST, "svc.corp.com")
-                .header(HttpHeaders.ORIGIN, "https://origin.corp.com")
-                .exchange()
-                .expectStatus().isOk()
-                .expectHeader()
-                .valueEquals(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "https://origin.corp.com");
+        @Test
+        void testCors() {
+                // Route with CORS configuration
+                stubFor(get("/cors").willReturn(ok("CORS")));
+                client.get().uri("/cors")
+                                .header(HttpHeaders.HOST, "svc.corp.com")
+                                .header(HttpHeaders.ORIGIN, "https://origin.corp.com")
+                                .exchange()
+                                .expectStatus().isOk()
+                                .expectHeader()
+                                .valueEquals(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "https://origin.corp.com");
 
-        client.options().uri("/cors")
-                .header(HttpHeaders.HOST, "svc.corp.com")
-                .header(HttpHeaders.ORIGIN, "https://origin.corp.com")
-                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET")
-                .exchange()
-                .expectStatus().isOk()
-                .expectHeader()
-                .valueEquals(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "https://origin.corp.com")
-                .expectHeader()
-                .valueEquals(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "GET,POST,PUT,DELETE,OPTIONS");
+                client.options().uri("/cors")
+                                .header(HttpHeaders.HOST, "svc.corp.com")
+                                .header(HttpHeaders.ORIGIN, "https://origin.corp.com")
+                                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET")
+                                .exchange()
+                                .expectStatus().isOk()
+                                .expectHeader()
+                                .valueEquals(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "https://origin.corp.com")
+                                .expectHeader()
+                                .valueEquals(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "GET,POST,PUT,DELETE,OPTIONS");
 
-        client.get().uri("/cors")
-                .header(HttpHeaders.HOST, "svc.corp.com")
-                .header(HttpHeaders.ORIGIN, "https://evil.com")
-                .exchange()
-                .expectStatus().isForbidden();
+                client.get().uri("/cors")
+                                .header(HttpHeaders.HOST, "svc.corp.com")
+                                .header(HttpHeaders.ORIGIN, "https://evil.com")
+                                .exchange()
+                                .expectStatus().isForbidden();
 
-        // Route without CORS configuration
-        stubFor(get("/hello").willReturn(ok("Hello")));
-        client.get().uri("/hello")
-                .header(HttpHeaders.HOST, "hello.corp.com")
-                .header(HttpHeaders.ORIGIN, "https://origin.corp.com")
-                .exchange()
-                .expectStatus().isOk()
-                .expectHeader().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN);
-    }
+                // Route without CORS configuration
+                stubFor(get("/hello").willReturn(ok("Hello")));
+                client.get().uri("/hello")
+                                .header(HttpHeaders.HOST, "hello.corp.com")
+                                .header(HttpHeaders.ORIGIN, "https://origin.corp.com")
+                                .exchange()
+                                .expectStatus().isOk()
+                                .expectHeader().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN);
+        }
+
+        @Test
+        void testOptions() {
+                stubFor(options(urlEqualTo("/hello")).willReturn(ok()));
+                client.options().uri("/hello")
+                                .header(HttpHeaders.HOST, "hello.corp.com")
+                                .exchange()
+                                .expectStatus().isOk();
+        }
 }
