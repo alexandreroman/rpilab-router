@@ -66,6 +66,12 @@ class GlobalCorsFilter extends OncePerRequestFilter {
         if (config != null) {
             boolean isValid = processor.processRequest(config, request, response);
             if (!isValid || CorsUtils.isPreFlightRequest(request)) {
+                // If the request is a CORS preflight request, we handle it directly here.
+                // We ensure the response status is 200 OK and stop the filter chain
+                // to prevent the request from being forwarded to the downstream service.
+                if (isValid && CorsUtils.isPreFlightRequest(request)) {
+                    response.setStatus(HttpServletResponse.SC_OK);
+                }
                 return;
             }
         }
