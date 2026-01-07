@@ -70,6 +70,27 @@ class GlobalCorsFilter extends OncePerRequestFilter {
                 // We ensure the response status is 200 OK and stop the filter chain
                 // to prevent the request from being forwarded to the downstream service.
                 if (isValid && CorsUtils.isPreFlightRequest(request)) {
+                    if (response.getHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS) == null
+                            && config.getAllowedMethods() != null) {
+                        response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS,
+                                String.join(",", config.getAllowedMethods()));
+                    }
+                    if (response.getHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS) == null
+                            && config.getAllowedHeaders() != null) {
+                        response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,
+                                String.join(",", config.getAllowedHeaders()));
+                    }
+                    if (response.getHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS) == null
+                            && Boolean.TRUE.equals(config.getAllowCredentials())) {
+                        response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+                    }
+                    if (response.getHeader(HttpHeaders.ACCESS_CONTROL_MAX_AGE) == null) {
+                        Long maxAge = config.getMaxAge();
+                        if (maxAge == null) {
+                            maxAge = 300L;
+                        }
+                        response.setHeader(HttpHeaders.ACCESS_CONTROL_MAX_AGE, maxAge.toString());
+                    }
                     response.setStatus(HttpServletResponse.SC_OK);
                 }
                 return;

@@ -141,7 +141,9 @@ class RoutingTests {
                                 .expectHeader()
                                 .valueEquals(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "https://origin.corp.com")
                                 .expectHeader()
-                                .valueEquals(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "GET,POST,PUT,DELETE,OPTIONS");
+                                .valueEquals(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "GET,POST,PUT,DELETE,OPTIONS")
+                                .expectHeader()
+                                .valueEquals(HttpHeaders.ACCESS_CONTROL_MAX_AGE, "300");
 
                 client.get().uri("/cors")
                                 .header(HttpHeaders.HOST, "svc.corp.com")
